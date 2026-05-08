@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#080c14"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="GlucoScan"/>
+<meta name="application-name" content="GlucoScan"/>
+<meta name="description" content="Analizá el IG de tu plato con IA"/>
+<link rel="manifest" id="pwa-manifest"/>
+<title>GlucoScan</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#080c14;--surface:#0e1521;--surface2:#141d2e;
+  --border:#1e2d44;--accent:#00d4aa;--accent2:#0091ff;
+  --text:#e8edf5;--muted:#5a6a82;
+  --low:#00d4aa;--med:#f5c842;--high:#ff4d4d;
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Sora',sans-serif}
+body{display:flex;flex-direction:column;min-height:100vh}
+
+.header{padding:16px 20px 14px;display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo-name{font-size:20px;font-weight:700;letter-spacing:-0.5px}
+.logo-sub{font-size:9px;color:var(--muted);font-family:'Space Mono',monospace;letter-spacing:2px;text-transform:uppercase}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px}
+
+main{flex:1;padding:20px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:18px;animation:slideDown .3s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.panel-title{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.panel-title::before{content:'';display:block;width:18px;height:1px;background:var(--accent)}
+
+/* API setup card */
+.setup-card{background:linear-gradient(135deg,rgba(0,212,170,.08),rgba(0,145,255,.08));border:1px solid rgba(0,212,170,.25);border-radius:18px;padding:22px;margin-bottom:18px}
+.setup-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.setup-sub{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:16px}
+.steps{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.step{display:flex;align-items:flex-start;gap:12px}
+.step-num{min-width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--bg);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.step-text{font-size:13px;line-height:1.5}
+.step-text a{color:var(--accent);text-decoration:none;font-weight:600}
+.step-text strong{color:var(--text)}
+
+.api-input{width:100%;padding:13px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'Space Mono',monospace;font-size:12px;outline:none;transition:border .2s;margin-bottom:10px}
+.api-input:focus{border-color:var(--accent)}
+.api-input::placeholder{color:var(--muted)}
+.save-btn{width:100%;padding:13px;border-radius:12px;background:var(--accent);border:none;color:var(--bg);font-family:'Sora',sans-serif;font-size:14px;font-weight:700;cursor:pointer}
+
+.ratio-row{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.ratio-label{font-size:13px}
+.ratio-sub{font-size:10px;color:var(--muted);margin-top:2px}
+.ratio-ctrl{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:12px;padding:8px 12px;border:1px solid var(--border)}
+.ratio-btn{width:28px;height:28px;border-radius:8px;border:none;background:var(--border);color:var(--text);cursor:pointer;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1}
+.ratio-btn:active{background:var(--accent);color:var(--bg)}
+.ratio-val{font-family:'Space Mono',monospace;font-size:13px;color:var(--accent);min-width:60px;text-align:center}
+
+.upload-zone{border:2px dashed var(--border);border-radius:18px;padding:36px 20px;text-align:center;background:var(--surface);cursor:pointer}
+.upload-icon{font-size:52px;display:block;margin-bottom:14px}
+.upload-title{font-size:18px;font-weight:600;margin-bottom:8px}
+.upload-sub{font-size:13px;color:var(--muted);line-height:1.5}
+.btn-row{display:flex;gap:10px;margin-top:18px;justify-content:center}
+.btn{padding:11px 20px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;font-family:'Sora',sans-serif;font-weight:500;display:flex;align-items:center;gap:7px}
+.btn.primary{background:var(--accent);color:var(--bg);border-color:var(--accent);font-weight:700}
+.btn.full{width:100%;justify-content:center;font-size:15px;padding:15px}
+.btn.outline{background:transparent;color:var(--muted);justify-content:center;width:100%;margin-bottom:20px;border:1px solid var(--border)}
+
+.preview-wrap{position:relative;border-radius:18px;overflow:hidden;margin-bottom:14px}
+.preview-wrap img{width:100%;max-height:260px;object-fit:cover;display:block}
+.preview-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(8,12,20,.85) 0%,transparent 55%);display:flex;align-items:flex-end;padding:16px}
+.preview-overlay button{padding:9px 18px;border-radius:10px;background:rgba(255,255,255,.15);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.2);color:white;cursor:pointer;font-size:13px;font-family:'Sora',sans-serif}
+
+.loading{text-align:center;padding:36px 20px;background:var(--surface);border-radius:18px;border:1px solid var(--border)}
+.spinner{width:54px;height:54px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--accent);animation:spin 1s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-text{font-size:14px;color:var(--muted)}
+.load-step{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);margin-top:8px;min-height:18px}
+
+.results{animation:fadeUp .4s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.food-header{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px}
+.food-name{font-size:21px;font-weight:700;margin-bottom:4px}
+.food-portion{font-size:12px;color:var(--muted)}
+.food-notes{margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.6}
+
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px}
+.metric-lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:7px}
+.metric-val{font-size:26px;font-weight:700;font-family:'Space Mono',monospace}
+.metric-unit{font-size:11px;color:var(--muted);margin-top:2px}
+.gi-bar{height:4px;border-radius:2px;background:var(--border);margin-top:8px;overflow:hidden}
+.gi-fill{height:100%;border-radius:2px;width:0;transition:width 1.2s ease}
+.gi-lbl{font-size:9px;font-family:'Space Mono',monospace;letter-spacing:1px;margin-top:5px}
+.c-low{color:var(--low)}.c-med{color:var(--med)}.c-high{color:var(--high)}
+.f-low{background:var(--low)}.f-med{background:var(--med)}.f-high{background:var(--high)}
+
+.insulin-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:20px;margin-bottom:14px;position:relative;overflow:hidden}
+.insulin-card::before{content:'';position:absolute;top:-50px;right:-50px;width:130px;height:130px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,170,.1) 0%,transparent 70%)}
+.ins-lbl{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted);font-family:'Space Mono',monospace;margin-bottom:10px}
+.ins-dose{font-size:60px;font-weight:700;font-family:'Space Mono',monospace;color:var(--accent);line-height:1}
+.ins-unit{font-size:17px;color:var(--muted);margin-top:3px}
+.ins-formula{margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;line-height:1.9}
+.hl{color:var(--text)}
+.adj-row{display:flex;align-items:center;gap:10px;margin-top:14px}
+.adj-btn{width:42px;height:42px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center}
+.adj-btn:active{border-color:var(--accent);color:var(--accent)}
+.adj-info{flex:1}
+.adj-label{font-size:12px}
+.adj-val{font-size:11px;color:var(--muted)}
+
+.foods-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px}
+.food-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.food-item:last-child{border-bottom:none;padding-bottom:0}
+.fi-name{flex:1}
+.fi-name-text{font-size:13px}
+.fi-source{font-size:10px;color:var(--muted);margin-top:2px}
+.fi-carbs{font-family:'Space Mono',monospace;font-size:12px;color:var(--accent2)}
+.badge{font-size:10px;padding:3px 8px;border-radius:6px;font-family:'Space Mono',monospace}
+.badge-low{background:rgba(0,212,170,.15);color:var(--low)}
+.badge-med{background:rgba(245,200,66,.15);color:var(--med)}
+.badge-high{background:rgba(255,77,77,.15);color:var(--high)}
+
+.sources-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:14px}
+.src-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.src-item:last-child{border-bottom:none}
+.src-icon{font-size:15px;margin-top:1px;flex-shrink:0}
+.src-name{font-size:12px;font-weight:600;margin-bottom:2px}
+.src-desc{font-size:10px;color:var(--muted);line-height:1.5}
+
+.disclaimer{background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.2);border-radius:14px;padding:14px;margin-bottom:20px;font-size:11px;color:rgba(255,107,53,.9);line-height:1.6;display:flex;gap:10px}
+.error-box{background:rgba(255,77,77,.08);border:1px solid rgba(255,77,77,.25);border-radius:14px;padding:16px;margin-bottom:16px;font-size:13px;color:#ff6b6b;line-height:1.5}
+
+.free-badge{display:inline-block;background:rgba(0,212,170,.15);color:var(--accent);font-size:10px;font-family:'Space Mono',monospace;padding:3px 8px;border-radius:6px;margin-left:8px;vertical-align:middle}
+
+input[type=file]{display:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">💉</div>
+    <div>
+      <div class="logo-name">GlucoScan <span class="free-badge">FREE</span></div>
+      <div class="logo-sub">Glycemic AI</div>
+    </div>
+  </div>
+  <button class="icon-btn" onclick="toggleSettings()">⚙️</button>
+</div>
+
+<main>
+
+  <!-- SETTINGS -->
+  <div id="settingsPanel" style="display:none">
+    <div class="panel">
+      <div class="panel-title">Relación Insulina</div>
+      <div class="ratio-row">
+        <div>
+          <div class="ratio-label">1 unidad cada X gramos</div>
+          <div class="ratio-sub">Ajustá según tu prescripción</div>
+        </div>
+        <div class="ratio-ctrl">
+          <button class="ratio-btn" onclick="changeRatio(-5)">−</button>
+          <div class="ratio-val" id="ratioDisplay">1u / 30g</div>
+          <button class="ratio-btn" onclick="changeRatio(5)">+</button>
+        </div>
+      </div>
+      <div id="ratioTable" style="margin-top:12px;padding:10px;background:var(--surface2);border-radius:10px;font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;line-height:2"></div>
+    </div>
+  </div>
+
+  <!-- API SETUP (se muestra si no hay key) -->
+  <div id="setupCard" class="setup-card" style="display:none">
+    <div class="setup-title">🔑 Configurá tu API Key gratis</div>
+    <div class="setup-sub">Usamos Google Gemini — completamente gratis, sin tarjeta de crédito.</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">Entrá a <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a></div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">Iniciá sesión con tu cuenta Google (la misma que usás para Gmail)</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">Tocá <strong>"Create API Key"</strong> y copiá la clave que aparece</div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-text">Pegala acá abajo y tocá Guardar</div>
+      </div>
+    </div>
+    <input class="api-input" type="password" id="apiKey" placeholder="AIzaSy..." oninput="checkKeyInput()"/>
+    <button class="save-btn" onclick="saveKeyAndContinue()">✓ Guardar y continuar</button>
+  </div>
+
+  <!-- UPLOAD ZONE -->
+  <div id="uploadZone" class="upload-zone" style="display:none" onclick="document.getElementById('fileGallery').click()">
+    <span class="upload-icon">🍽️</span>
+    <div class="upload-title">Fotografiá tu plato</div>
+    <div class="upload-sub">El AI analiza el índice glucémico de cada alimento y calcula tu dosis de insulina</div>
+    <div class="btn-row" onclick="event.stopPropagation()">
+      <button class="btn" onclick="document.getElementById('fileGallery').click()">🖼️ Galería</button>
+      <button class="btn primary" onclick="document.getElementById('fileCamera').click()">📷 Cámara</button>
+    </div>
+  </div>
+  <input type="file" id="fileGallery" accept="image/*" onchange="handleFile(this)"/>
+  <input type="file" id="fileCamera" accept="image/*" capture="environment" onchange="handleFile(this)"/>
+
+  <!-- PREVIEW -->
+  <div id="previewWrap" style="display:none">
+    <div class="preview-wrap">
+      <img id="previewImg" src="" alt="Plato"/>
+      <div class="preview-overlay">
+        <button onclick="resetAll()">✕ Cambiar foto</button>
+      </div>
+    </div>
+    <button class="btn primary full" onclick="analyze()">🔬 Analizar Plato</button>
+  </div>
+
+  <!-- LOADING -->
+  <div id="loadingWrap" style="display:none">
+    <div class="preview-wrap">
+      <img id="loadingImg" src="" alt="" style="max-height:200px;object-fit:cover;width:100%;filter:brightness(.4)"/>
+    </div>
+    <div class="loading">
+      <div class="spinner"></div>
+      <div class="load-text">Analizando tu plato con IA...</div>
+      <div class="load-step" id="loadStep"></div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="resultsWrap" style="display:none" class="results">
+    <div class="preview-wrap">
+      <img id="resultImg" src="" alt="" style="max-height:240px;object-fit:cover;width:100%"/>
+    </div>
+    <div class="food-header">
+      <div class="food-name" id="rFoodName"></div>
+      <div class="food-portion" id="rPortion"></div>
+      <div class="food-notes" id="rNotes"></div>
+    </div>
+    <div class="metrics">
+      <div class="metric">
+        <div class="metric-lbl">Carbohidratos</div>
+        <div class="metric-val" id="rCarbs" style="color:var(--accent2)"></div>
+        <div class="metric-unit">gramos totales</div>
+      </div>
+      <div class="metric">
+        <div class="metric-lbl">Índice Glucémico</div>
+        <div class="metric-val" id="rGI"></div>
+        <div class="gi-bar"><div class="gi-fill" id="rGIBar"></div></div>
+        <div class="gi-lbl" id="rGILabel"></div>
+      </div>
+    </div>
+    <div class="insulin-card">
+      <div class="ins-lbl">Dosis de insulina sugerida</div>
+      <div class="ins-dose" id="rDose">0</div>
+      <div class="ins-unit">unidades</div>
+      <div class="ins-formula" id="rFormula"></div>
+      <div class="adj-row">
+        <button class="adj-btn" onclick="adjustDose(-0.5)">−</button>
+        <div class="adj-info">
+          <div class="adj-label">Ajuste de corrección</div>
+          <div class="adj-val" id="adjVal">Sin ajuste</div>
+        </div>
+        <button class="adj-btn" onclick="adjustDose(0.5)">+</button>
+      </div>
+    </div>
+    <div class="foods-card">
+      <div class="panel-title" style="margin-bottom:10px">Desglose por alimento</div>
+      <div id="foodsList"></div>
+    </div>
+    <div class="sources-card">
+      <div class="panel-title" style="margin-bottom:10px">Fuentes Científicas</div>
+      <div class="src-item"><div class="src-icon">🏛️</div><div><div class="src-name">Universidad de Sydney – GI Database</div><div class="src-desc">Base de datos global con más de 3,000 alimentos clasificados por índice glucémico, basada en estudios clínicos con sujetos humanos.</div></div></div>
+      <div class="src-item"><div class="src-icon">🔬</div><div><div class="src-name">Atkinson et al. (2008) – AJCN</div><div class="src-desc">International tables of glycemic index and glycemic load values. American Journal of Clinical Nutrition, 87(1):223S-236S.</div></div></div>
+      <div class="src-item"><div class="src-icon">📋</div><div><div class="src-name">Livesey et al. (2019) – Diabetes Care</div><div class="src-desc">Dietary glycemic index and load and the risk of type 2 diabetes. Revisión sistemática de 47 estudios prospectivos.</div></div></div>
+      <div class="src-item"><div class="src-icon">🏥</div><div><div class="src-name">Asociación Americana de Diabetes (ADA)</div><div class="src-desc">Guías de práctica clínica 2024: conteo de carbohidratos y dosis de insulina prandial.</div></div></div>
+    </div>
+    <div class="disclaimer">
+      <span style="font-size:15px;flex-shrink:0">⚠️</span>
+      <div><strong>Aviso médico:</strong> Esta herramienta es orientativa. La dosis de insulina siempre debe ser validada por tu médico o educador en diabetes.</div>
+    </div>
+    <button class="btn outline" onclick="resetAll()">↩ Analizar otro plato</button>
+  </div>
+
+  <!-- ERROR -->
+  <div id="errorWrap" style="display:none">
+    <div class="error-box" id="errorMsg"></div>
+    <button class="btn outline" onclick="goBack()">↩ Intentar de nuevo</button>
+  </div>
+
+</main>
+
+<script>
+let ratio=30, doseAdj=0, lastResult=null, currentImgSrc='';
+
+window.onload=()=>{
+  const k=localStorage.getItem('gs_gemini_key');
+  const r=localStorage.getItem('gs_ratio');
+  if(r) ratio=parseInt(r);
+  updateRatioDisplay();
+  if(k){ show('uploadZone'); }
+  else { show('setupCard'); }
+};
+
+function toggleSettings(){
+  const p=document.getElementById('settingsPanel');
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+
+function changeRatio(d){
+  ratio=Math.min(80,Math.max(5,ratio+d));
+  localStorage.setItem('gs_ratio',ratio);
+  updateRatioDisplay();
+  if(lastResult) updateDose();
+}
+
+function updateRatioDisplay(){
+  document.getElementById('ratioDisplay').textContent=`1u / ${ratio}g`;
+  document.getElementById('ratioTable').innerHTML=
+    `<span style="color:var(--accent)">30g → ${(30/ratio).toFixed(1)}u</span>&nbsp;&nbsp;`+
+    `<span style="color:var(--accent)">60g → ${(60/ratio).toFixed(1)}u</span><br/>`+
+    `<span style="color:var(--accent)">90g → ${(90/ratio).toFixed(1)}u</span>&nbsp;&nbsp;`+
+    `<span style="color:var(--accent)">120g → ${(120/ratio).toFixed(1)}u</span>`;
+}
+
+function checkKeyInput(){}
+
+function saveKeyAndContinue(){
+  const k=document.getElementById('apiKey').value.trim();
+  if(!k||!k.startsWith('AIza')){ alert('Pegá una API Key válida de Google (empieza con AIza...)'); return; }
+  localStorage.setItem('gs_gemini_key',k);
+  hide('setupCard');
+  show('uploadZone');
+}
+
+function handleFile(input){
+  const file=input.files[0];
+  if(!file) return;
+  currentImgSrc=URL.createObjectURL(file);
+  window._currentFile=file;
+  document.getElementById('previewImg').src=currentImgSrc;
+  hide('uploadZone');hide('resultsWrap');hide('errorWrap');
+  show('previewWrap');
+  input.value='';
+}
+
+function show(id){document.getElementById(id).style.display='block';}
+function hide(id){document.getElementById(id).style.display='none';}
+
+function goBack(){
+  hide('errorWrap');
+  if(currentImgSrc){ show('previewWrap'); }
+  else { show('uploadZone'); }
+}
+
+function resetAll(){
+  lastResult=null;doseAdj=0;currentImgSrc='';window._currentFile=null;
+  hide('previewWrap');hide('loadingWrap');hide('resultsWrap');hide('errorWrap');
+  show('uploadZone');
+}
+
+async function analyze(){
+  const apiKey=localStorage.getItem('gs_gemini_key');
+  if(!apiKey){ hide('uploadZone');hide('previewWrap');show('setupCard'); return; }
+  if(!window._currentFile){ alert('Seleccioná una imagen primero'); return; }
+
+  document.getElementById('loadingImg').src=currentImgSrc;
+  hide('previewWrap');show('loadingWrap');hide('resultsWrap');hide('errorWrap');
+
+  const steps=['Identificando alimentos...','Calculando índice glucémico...','Estimando carbohidratos...','Calculando dosis de insulina...'];
+  let si=0;
+  const stepEl=document.getElementById('loadStep');
+  stepEl.textContent=steps[0];
+  const stepTimer=setInterval(()=>{ stepEl.textContent=steps[++si%steps.length]; },1800);
+
+  try{
+    const b64=await toBase64(window._currentFile);
+    const mt=window._currentFile.type;
+
+    const prompt=`Eres un nutricionista clínico experto en índice glucémico. Analiza esta imagen de un plato de comida y devuelve SOLO un objeto JSON válido, sin texto adicional, sin markdown, sin backticks.
+
+Estructura exacta del JSON:
+{
+  "plateName": "nombre descriptivo del plato en español",
+  "totalCarbs": número (gramos totales de carbohidratos estimados),
+  "weightedGI": número entre 0 y 100 (índice glucémico ponderado),
+  "portion": "descripción de la porción estimada",
+  "foods": [
+    {
+      "name": "nombre del alimento en español",
+      "carbs": número,
+      "gi": número,
+      "source": "fuente científica del GI"
+    }
+  ],
+  "notes": "comentario clínico breve sobre el impacto glucémico del plato"
+}
+
+Reglas importantes:
+- Usa valores de GI validados científicamente (Sydney GI Database, tablas AJCN)
+- weightedGI = suma(carbs_i × GI_i) / totalCarbs
+- Devuelve ÚNICAMENTE el JSON, nada más`;
+
+    const res=await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+      {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+          contents:[{parts:[
+            {inline_data:{mime_type:mt,data:b64}},
+            {text:prompt}
+          ]}],
+          generationConfig:{temperature:0.1,maxOutputTokens:2000}
+        })
+      }
+    );
+
+    clearInterval(stepTimer);
+
+    if(!res.ok){
+      const e=await res.json();
+      const msg=e.error?.message||`Error ${res.status}`;
+      if(msg.includes('API_KEY_INVALID')||msg.includes('API key not valid')){
+        localStorage.removeItem('gs_gemini_key');
+        throw new Error('API Key inválida. Tocá "Intentar de nuevo" para configurarla de nuevo.');
+      }
+      throw new Error(msg);
+    }
+
+    const data=await res.json();
+    const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    // Extract JSON block robustly
+    let clean=text.replace(/```json|```/g,'').trim();
+    // Find first { and last } to extract valid JSON
+    const start=clean.indexOf('{');
+    const end=clean.lastIndexOf('}');
+    if(start===-1||end===-1) throw new Error('No se pudo obtener respuesta válida. Intentá de nuevo.');
+    clean=clean.substring(start,end+1);
+    lastResult=JSON.parse(clean);
+    doseAdj=0;
+    renderResults();
+
+  }catch(err){
+    clearInterval(stepTimer);
+    hide('loadingWrap');show('errorWrap');
+    document.getElementById('errorMsg').innerHTML=
+      '⚠️ '+(err.message||'No se pudo analizar. Probá con una foto más clara del plato.');
+  }
+}
+
+function toBase64(file){
+  return new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=rej;
+    r.readAsDataURL(file);
+  });
+}
+
+function giClass(gi){
+  if(gi<=55) return{cls:'c-low',fill:'f-low',lbl:'BAJO ✓',badge:'badge-low'};
+  if(gi<=69) return{cls:'c-med',fill:'f-med',lbl:'MEDIO',badge:'badge-med'};
+  return{cls:'c-high',fill:'f-high',lbl:'ALTO ⚡',badge:'badge-high'};
+}
+
+function renderResults(){
+  const r=lastResult;
+  hide('loadingWrap');show('resultsWrap');
+  document.getElementById('resultImg').src=currentImgSrc;
+  document.getElementById('rFoodName').textContent=r.plateName;
+  document.getElementById('rPortion').textContent='📐 '+r.portion;
+  const ne=document.getElementById('rNotes');
+  if(r.notes){ne.textContent='💬 '+r.notes;ne.style.display='block';}
+  else ne.style.display='none';
+  document.getElementById('rCarbs').textContent=r.totalCarbs;
+
+  const gi=giClass(r.weightedGI);
+  const giEl=document.getElementById('rGI');
+  giEl.textContent=r.weightedGI;giEl.className='metric-val '+gi.cls;
+  const bar=document.getElementById('rGIBar');
+  bar.className='gi-fill '+gi.fill;
+  setTimeout(()=>{bar.style.width=r.weightedGI+'%';},100);
+  const gl=document.getElementById('rGILabel');
+  gl.textContent=gi.lbl;gl.className='gi-lbl '+gi.cls;
+
+  const fl=document.getElementById('foodsList');fl.innerHTML='';
+  (r.foods||[]).forEach(f=>{
+    const cat=giClass(f.gi);
+    const d=document.createElement('div');d.className='food-item';
+    d.innerHTML=`
+      <div class="fi-name">
+        <div class="fi-name-text">${f.name}</div>
+        <div class="fi-source">${f.source||''}</div>
+      </div>
+      <div class="fi-carbs">${f.carbs}g</div>
+      <div class="badge ${cat.badge}">GI ${f.gi}</div>`;
+    fl.appendChild(d);
+  });
+
+  updateDose();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function updateDose(){
+  if(!lastResult) return;
+  const dose=Math.max(0,Math.round((lastResult.totalCarbs/ratio+doseAdj)*10)/10);
+  document.getElementById('rDose').textContent=dose;
+  let f=`<span class="hl">${lastResult.totalCarbs}g</span> ÷ <span class="hl">${ratio}g/u</span>`;
+  if(doseAdj!==0) f+=` + corrección (<span class="hl">${doseAdj>0?'+':''}${doseAdj}u</span>)`;
+  f+=` = <span style="color:var(--accent);font-weight:700">${dose}u</span>`;
+  document.getElementById('rFormula').innerHTML=f;
+  document.getElementById('adjVal').textContent=doseAdj===0?'Sin ajuste':`${doseAdj>0?'+':''}${doseAdj}u`;
+}
+
+function adjustDose(d){doseAdj=Math.round((doseAdj+d)*10)/10;updateDose();}
+updateRatioDisplay();
+
+// PWA MANIFEST
+const manifest={name:'GlucoScan – Glycemic AI',short_name:'GlucoScan',description:'Analizá el índice glucémico de tu plato',start_url:'.',display:'standalone',background_color:'#080c14',theme_color:'#080c14',orientation:'portrait',icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='120' fill='%23080c14'/><defs><linearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'><stop offset='0%25' stop-color='%2300d4aa'/><stop offset='100%25' stop-color='%230091ff'/></linearGradient></defs><rect x='100' y='100' width='312' height='312' rx='80' fill='url(%23g)'/><text x='256' y='310' text-anchor='middle' font-size='160'>&#128137;</text></svg>",sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/json'});
+const mEl=document.getElementById('pwa-manifest');
+if(mEl) mEl.href=URL.createObjectURL(mBlob);
+
+// INSTALL PROMPT
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{
+  e.preventDefault(); deferredPrompt=e;
+  const b=document.createElement('div');
+  b.id='installBanner';
+  b.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#00d4aa,#0091ff);color:#080c14;padding:14px 28px;border-radius:16px;font-family:Sora,sans-serif;font-size:14px;font-weight:700;display:flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 8px 32px rgba(0,212,170,.4);z-index:9999;';
+  b.innerHTML='<span style="font-size:22px">&#128242;</span><span>Instalar GlucoScan como app</span>';
+  document.body.appendChild(b);
+  b.onclick=async()=>{deferredPrompt.prompt();await deferredPrompt.userChoice;b.remove();deferredPrompt=null;};
+});
+window.addEventListener('appinstalled',()=>{const b=document.getElementById('installBanner');if(b)b.remove();});
+
+</script>
+</body>
+</html>
